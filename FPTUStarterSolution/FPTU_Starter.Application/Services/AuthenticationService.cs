@@ -91,7 +91,7 @@ namespace FPTU_Starter.Application.Services
                     var emailToken = await _userManager.GenerateTwoFactorTokenAsync(getUser, "Email");
                     var mess = new Message(new string[] { getUser.Email! }, "OTP Verification", emailToken);
                     _emailService.SendEmail(mess);
-                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = $"OTP have been sent to your email {getUser.Email}" }, "otp_sent");
+                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = $"OTP đã được gửi tới email {getUser.Email}" }, "otp_sent");
                 }
 
                 var userRole = await _userManager.GetRolesAsync(getUser);
@@ -113,10 +113,8 @@ namespace FPTU_Starter.Application.Services
                 var user = await _userManager.FindByNameAsync(username);
                 if (user == null)
                 {
-                    return ResultDTO<ResponseToken>.Fail("Can Not Found User !!!");
+                    return ResultDTO<ResponseToken>.Fail("Không thể tìm thấy người dùng !!!");
                 }
-
-                _logger.LogInformation($"Attempting 2FA sign-in for user {username} with code {code}.");
                 var signIn = await _userManager.VerifyTwoFactorTokenAsync(user, "Email", code);
 
                 if (signIn)
@@ -125,21 +123,17 @@ namespace FPTU_Starter.Application.Services
                     var updateResult = await _userManager.UpdateAsync(user);
                     if (!updateResult.Succeeded)
                     {
-                        _logger.LogError($"Failed to update user {username}. Errors: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}");
-                        return ResultDTO<ResponseToken>.Fail("Failed to update user.");
+                        return ResultDTO<ResponseToken>.Fail("Không thể cập nhật người dùng!.");
                     }
                     var userRole = await _userManager.GetRolesAsync(user);
                     var token = _tokenGenerator.GenerateToken(user, userRole);
-                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = token }, "Successfully created token");
+                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = token }, "Tạo token thành công!");
                 }
-
-                _logger.LogWarning($"Invalid code provided for user {username}.");
-                return ResultDTO<ResponseToken>.Fail("Invalid Code !!!");
+                return ResultDTO<ResponseToken>.Fail($"OTP không hợp lệ!!!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred during 2FA login.");
-                throw new Exception("An error occurred during 2FA login.", ex);
+                throw new Exception("Lỗi xảy ra khi xác thực 2 yếu tố", ex);
             }
 
         }
@@ -148,14 +142,11 @@ namespace FPTU_Starter.Application.Services
         {
             try
             {
-                // Check if the user already exists
                 var getUser = await _unitOfWork.UserRepository.GetAsync(x => x.Email == registerModel.Email);
                 if (getUser != null)
                 {
-                    return ResultDTO<ResponseToken>.Fail("User already exists");
+                    return ResultDTO<ResponseToken>.Fail("Người dùng đã tồn tại!");
                 }
-
-                // Create a new user
                 var newUser = new ApplicationUser
                 {
                     AccountName = registerModel.AccountName,
@@ -165,28 +156,23 @@ namespace FPTU_Starter.Application.Services
                     Gender = null,
                     DayOfBirth = null,
                     NormalizedEmail = registerModel.Email,
-                    TwoFactorEnabled = true, //enable 2FA
+                    TwoFactorEnabled = true,
                 };
 
-
-                // Add the user using UserManager
                 var result = await _userManager.CreateAsync(newUser, registerModel.Password);
                 if (!result.Succeeded)
                 {
-                    // Handle and log errors if user creation failed
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    return ResultDTO<ResponseToken>.Fail($"User creation failed: {errors}");
+                    return ResultDTO<ResponseToken>.Fail($"Tạo người dùng thất bại: {errors}");
                 }
                 else
                 {
-                    //config role BACKER
                     if (!await _roleManager.RoleExistsAsync(role))
                     {
                         await _roleManager.CreateAsync(new IdentityRole(role));
                     }
                     await _userManager.AddToRoleAsync(newUser, role);
                 }
-                //Create new Wallet for every User sign in
                 BankAccount bankAccount = new BankAccount
                 {
                     Id = Guid.NewGuid(),
@@ -208,9 +194,7 @@ namespace FPTU_Starter.Application.Services
                 await _unitOfWork.WalletRepository.AddAsync(wallet);
 
 
-                // Optionally commit the changes if using a unit of work pattern
                 await _unitOfWork.CommitAsync();
-                // Generate a token for the new user
                 if (newUser.TwoFactorEnabled)
                 {
                     await _signInManager.SignOutAsync();
@@ -218,15 +202,15 @@ namespace FPTU_Starter.Application.Services
                     var emailToken = await _userManager.GenerateTwoFactorTokenAsync(newUser, "Email");
                     var mess = new Message(new string[] { newUser.Email! }, "OTP Verification", emailToken);
                     _emailService.SendEmail(mess);
-                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = $"OTP have been send to your email {newUser.Email}" });
+                    return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = $"Mã OTP đã được gửi tới email {newUser.Email}" });
                 }
                 var token = _tokenGenerator.GenerateToken(newUser, null);
-                return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = token }, "Successfully created user and token");
+                return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = token }, "Tạo người dùng và token thành công!");
             }
             catch (Exception ex)
             {
 
-                return ResultDTO<ResponseToken>.Fail($"An error occurred: {ex.Message}");
+                return ResultDTO<ResponseToken>.Fail($"Lỗi xảy ra: {ex.Message}");
             }
         }
         public async Task<ResultDTO<ResponseToken>> RegisterGoogleIdentity(string email, string name, string role, string avatarUrl)
@@ -289,18 +273,13 @@ namespace FPTU_Starter.Application.Services
                     BankAccountId = newBankAccount.Id
                 };
                 await _unitOfWork.WalletRepository.AddAsync(wallet);
-
-                // Optionally commit the changes if using a unit of work pattern
                 await _unitOfWork.CommitAsync();
-                // Generate a token for the new user
                 var userRole = await _userManager.GetRolesAsync(newUser);
                 var token = _tokenGenerator.GenerateToken(newUser, userRole);
                 return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = token }, "Successfully created user and token");
             }
             catch (Exception ex)
             {
-                // Log the exception and return a failure result
-                // Consider logging the exception to a file or monitoring system
                 return ResultDTO<ResponseToken>.Fail($"An error occurred: {ex.Message}");
             }
         }
@@ -369,6 +348,26 @@ namespace FPTU_Starter.Application.Services
             }
 
             return new string(passwordChars.ToString().OrderBy(c => random.Next()).ToArray());
+        }
+
+        public async Task<ResultDTO<ResponseToken>> ResendToken(string userEmail)
+        {
+            var getUser = await _unitOfWork.UserRepository.GetAsync(x => x.Email == userEmail);
+            if (getUser == null)
+            {
+                return ResultDTO<ResponseToken>.Fail("Người dùng không tồn tại!");
+            }
+            else if(getUser.EmailConfirmed == true)
+            {
+                return ResultDTO<ResponseToken>.Fail("Người dùng đã xác thực email!");
+            }
+            else
+            {
+                var emailToken = await _userManager.GenerateTwoFactorTokenAsync(getUser, "Email");
+                var mess = new Message(new string[] { getUser.Email! }, "OTP Verification", emailToken);
+                _emailService.SendEmail(mess);
+                return ResultDTO<ResponseToken>.Success(new ResponseToken { Token = $"OTP đã được gửi tới email {getUser.Email}" }, "otp_sent");
+            }
         }
     }
 }

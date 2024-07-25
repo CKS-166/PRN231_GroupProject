@@ -16,6 +16,7 @@ namespace FPTU_Starter.Application.Services.IService
         Task<ResultDTO<UserInfoResponse>> GetUserInfoByEmail(string email);
         Task<ResultDTO<ApplicationUser>> ChangeUserStatus(string userId);
         Task<ResultDTO<List<ApplicationUser>>> FilterUserByStatus(UserStatusTypes types);
+        Task<ResultDTO<string>> CheckUserPassword(string password, string email);
 
     }
 }

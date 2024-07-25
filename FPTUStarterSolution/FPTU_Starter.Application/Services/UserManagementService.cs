@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FPTU_Starter.Application.Services.IService;
 using FPTU_Starter.Application.ViewModel;
+using FPTU_Starter.Application.ViewModel.AuthenticationDTO;
 using FPTU_Starter.Application.ViewModel.UserDTO;
 using FPTU_Starter.Domain.Entity;
 using FPTU_Starter.Domain.Enum;
@@ -292,6 +293,22 @@ namespace FPTU_Starter.Application.Services
             catch (Exception ex)
             {
                 return ResultDTO<List<ApplicationUser>>.Fail("lỗi");
+            }
+        }
+
+        public async Task<ResultDTO<string>> CheckUserPassword(string password, string email)
+        {
+            var getUser = await _unitOfWork.UserRepository.GetAsync(x => x.Email == email);
+
+            if (getUser is null)
+                return ResultDTO<string>.Fail("Email không hợp lệ");
+            else if(!await _userManager.CheckPasswordAsync(getUser, password))
+            {
+                return ResultDTO<string>.Fail("Mật khẩu không hợp lệ");
+            }
+            else
+            {
+                return ResultDTO<string>.Success("Đúng mật khẩu");
             }
         }
     }

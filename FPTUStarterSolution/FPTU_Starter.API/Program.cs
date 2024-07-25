@@ -47,9 +47,15 @@ namespace FPTU_Starter.API
                 //    return Task.CompletedTask;
                 //};
             });
-            builder.Services.AddControllers().AddNewtonsoftJson(options =>
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
-);
+            builder.Services.AddControllers()
+            .AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+                {
+                    NamingStrategy = new Newtonsoft.Json.Serialization.KebabCaseNamingStrategy()
+                };
+            });
             builder.Services.AddControllers(options =>
             {
                 options.Filters.Add<GlobalExceptionHandler>();
