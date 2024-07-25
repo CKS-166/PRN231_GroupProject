@@ -1,9 +1,11 @@
 ﻿using FPTU_Starter.Application.ViewModel.CategoryDTO.SubCategoryDTO;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace FPTU_Starter.Application.ViewModel.CategoryDTO

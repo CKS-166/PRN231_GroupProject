@@ -56,7 +56,7 @@ namespace FPTU_Starter.Application.Services
             Category cate = _mapper.Map<Category>(request);
             await _unitOfWork.CategoryRepository.AddAsync(cate);
             await _unitOfWork.CommitAsync();
-            return ResultDTO<string>.Success("", "Add Sucessfully");
+            return ResultDTO<string>.Success("", "Add Successfully");
         }
 
         public async Task<ResultDTO<string>> UpdateCategory(CategoryUpdateRequest req)
@@ -71,11 +71,11 @@ namespace FPTU_Starter.Application.Services
                     //cate.SubCategories = subs;
                     _unitOfWork.CategoryRepository.Update(existedCate);
                     await _unitOfWork.CommitAsync();
-                    return ResultDTO<string>.Success("Add Sucessfully", "");
+                    return ResultDTO<string>.Success("", "Add Successfully");
                 }
                 else
                 {
-                    return ResultDTO<string>.Fail("", 404);
+                    return ResultDTO<string>.Fail("Category not found!", 404);
 
                 }
             }
